@@ -29,7 +29,9 @@ import {
   Award,
   HelpCircle,
   Sun,
-  Moon
+  Moon,
+  Menu,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -425,6 +427,9 @@ export default function App() {
       [section]: !prev[section]
     }));
   };
+
+  // Mobile Menu Sheet State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Custom Profile States
   const [clientProfile, setClientProfile] = useState({
@@ -802,13 +807,22 @@ export default function App() {
       {/* Header */}
       <header className="header">
         <div className="header-branding">
-          <div className="logo" onClick={() => setPage('HOME')}>
+          <div className="logo" onClick={() => { setPage('HOME'); setMobileMenuOpen(false); }}>
             gravity<span className="logo-dot">.</span>
             <span className="logo-pro-badge">pro</span>
           </div>
           <span className="badge-tag">UPI ESCROW</span>
         </div>
         
+        {/* Mobile menu toggle button */}
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
         <div className="header-controls">
           {/* Dashboard Navigator */}
           <div className="header-nav-group">
@@ -851,6 +865,48 @@ export default function App() {
         </div>
       </header>
 
+      {/* Mobile Drawer menu sheet */}
+      {mobileMenuOpen && (
+        <div className="mobile-menu-sheet">
+          <button 
+            className={`mobile-menu-btn ${page !== 'DASHBOARD' ? 'active' : ''}`}
+            onClick={() => {
+              setPage(activeGig ? 'BRIEF' : 'HOME');
+              setMobileMenuOpen(false);
+            }}
+          >
+            <Briefcase size={16} /> Sourcing Portal
+          </button>
+          <button 
+            className={`mobile-menu-btn ${page === 'DASHBOARD' ? 'active' : ''}`}
+            onClick={() => {
+              setPage('DASHBOARD');
+              setMobileMenuOpen(false);
+            }}
+          >
+            <Layers size={16} /> Pro Projects ({gigsList.length})
+          </button>
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => {
+              handleOpenProfileEditor();
+              setMobileMenuOpen(false);
+            }}
+          >
+            <Settings size={16} /> Profile Setup
+          </button>
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => {
+              toggleTheme();
+              setMobileMenuOpen(false);
+            }}
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />} {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </button>
+        </div>
+      )}
+
       {/* Clickable sub-navigation categories (FILTERS FREELANCERS) */}
       <div className="sub-nav-container">
         <div className="sub-nav">
@@ -890,16 +946,18 @@ export default function App() {
               </div>
 
               <div className="popular-tags">
-                <span>Popular Keywords:</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Graphics & Design")}>graphics_design</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Programming & Tech")}>programming_tech</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Digital Marketing")}>digital_marketing</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Writing & Translation")}>writing_translation</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Video & Animation")}>video_animation</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("AI Services")}>ai_services</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Music & Audio")}>music_audio</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Business")}>business</span>
-                <span className="popular-tag-badge" onClick={() => handleCategoryClick("Consulting")}>consulting</span>
+                <span className="popular-tags-label">Popular Keywords:</span>
+                <div className="popular-tags-list">
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Graphics & Design")}>Graphics & Design</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Programming & Tech")}>Programming & Tech</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Digital Marketing")}>Digital Marketing</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Writing & Translation")}>Writing & Translation</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Video & Animation")}>Video & Animation</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("AI Services")}>AI Services</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Music & Audio")}>Music & Audio</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Business")}>Business</span>
+                  <span className="popular-tag-badge" onClick={() => handleCategoryClick("Consulting")}>Consulting</span>
+                </div>
               </div>
             </div>
 
