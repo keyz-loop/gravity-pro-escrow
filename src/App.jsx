@@ -523,6 +523,68 @@ export default function App() {
   const [deliverableUrls, setDeliverableUrls] = useState({});
   const [deliverableNotes, setDeliverableNotes] = useState({});
   
+  // Campus Notes Marketplace States
+  const [activeSubTab, setActiveSubTab] = useState('PROJECTS'); // PROJECTS or NOTES
+  const [noteFilter, setNoteFilter] = useState('All');
+  const [selectedNoteForPreview, setSelectedNoteForPreview] = useState(null);
+  const [notesUpiTx, setNotesUpiTx] = useState(null);
+  const [uploadedFileName, setUploadedFileName] = useState("");
+
+  // Pro Wallet State — starts with ₹8,000 from archived completed gig
+  const [proWallet, setProWallet] = useState(8000);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawUpi, setWithdrawUpi] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+  const [noteForm, setNoteForm] = useState({
+    title: "",
+    subject: "Computer Science",
+    subject_code: "",
+    price: "",
+    preview_pages: "Page 1-2"
+  });
+  const [notesList, setNotesList] = useState([
+    {
+      id: "note-1",
+      title: "EEE 4th Sem - Analog Electronics Complete Derivations",
+      subject: "Analog Electronics",
+      subject_code: "EE-204",
+      price: 49,
+      seller_id: "freelancer-id-888",
+      seller_name: "Himanshu Singh",
+      rating: "5.0",
+      preview_pages: "Page 1-2",
+      fileName: "analog_electronics_derivations.pdf",
+      purchased: false
+    },
+    {
+      id: "note-2",
+      title: "CS 5th Sem - Database Management Systems Quick Revision",
+      subject: "Computer Science",
+      subject_code: "CS-302",
+      price: 39,
+      seller_id: "f-tech",
+      seller_name: "Arjun Sharma",
+      rating: "4.9",
+      preview_pages: "Page 1",
+      fileName: "dbms_quick_revision.pdf",
+      purchased: false
+    },
+    {
+      id: "note-3",
+      title: "EC 3rd Sem - Network Analysis Lecture Theorems",
+      subject: "Electronics & Comm",
+      subject_code: "EC-201",
+      price: 29,
+      seller_id: "f-graphics",
+      seller_name: "Riya Patel",
+      rating: "4.8",
+      preview_pages: "Page 1-2",
+      fileName: "network_theorems_revised.pdf",
+      purchased: false
+    }
+  ]);
+  
   // Chat
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
@@ -625,6 +687,58 @@ export default function App() {
     setProfileModalOpen(false);
   };
 
+  const handlePublishNotes = (e) => {
+    e.preventDefault();
+    if (!noteForm.title || !noteForm.price || !uploadedFileName) {
+      alert("Please fill all required fields and upload a simulated study notes PDF file.");
+      return;
+    }
+    const newNote = {
+      id: "note-" + Math.random().toString(36).substring(2, 9),
+      title: noteForm.title,
+      subject: noteForm.subject,
+      subject_code: noteForm.subject_code || "GEN-101",
+      price: parseFloat(noteForm.price),
+      seller_id: freelancerProfile.id,
+      seller_name: freelancerProfile.name,
+      rating: "5.0",
+      preview_pages: noteForm.preview_pages,
+      fileName: uploadedFileName,
+      purchased: false
+    };
+    setNotesList(prev => [newNote, ...prev]);
+    
+    // Reset Form
+    setNoteForm({
+      title: "",
+      subject: "Computer Science",
+      subject_code: "",
+      price: "",
+      preview_pages: "Page 1-2"
+    });
+    setUploadedFileName("");
+    alert(`🎉 Success! Study notes "${newNote.title}" listed live on the Campus Marketplace.`);
+  };
+
+  const handleConfirmNotesPayment = () => {
+    if (!notesUpiTx) return;
+    const purchasedNote = notesUpiTx;
+    setNotesList(prev => prev.map(n => n.id === purchasedNote.id ? { ...n, purchased: true } : n));
+
+    // Credit the seller's Pro Wallet if the buyer is buying from themselves (demo) or always credit wallet for simulation
+    if (purchasedNote.seller_id === freelancerProfile.id) {
+      setProWallet(prev => prev + purchasedNote.price);
+    }
+
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    setNotesUpiTx(null);
+    alert(`🎉 Payment Confirmed! You have successfully unlocked "${purchasedNote.title}".\n\n💰 ₹${purchasedNote.price} credited to seller's Pro Wallet. Download PDF from your card.`);
+  };
+
   const handleApproveAndReleaseForGig = (gig) => {
     const matchingTx = transactionsList.find(t => t.gig_id === gig.id);
     const updatedGig = {
@@ -644,6 +758,11 @@ export default function App() {
       if (upiTx && upiTx.gig_id === gig.id) {
         setUpiTx(updatedTx);
       }
+    }
+
+    // Credit gig budget to freelancer's Pro Wallet
+    if (gig.freelancer_id === freelancerProfile.id) {
+      setProWallet(prev => prev + gig.budget);
     }
 
     if (activeGig && activeGig.id === gig.id) {
@@ -1205,105 +1324,215 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Client Stats Grid */}
-                <div className="dashboard-stats-grid">
-                  <div className="dashboard-stat-card">
-                    <div className="stat-icon-wrapper client">
-                      <Briefcase size={22} />
-                    </div>
-                    <div className="stat-info">
-                      <span className="stat-label">My Posted Problems</span>
-                      <span className="stat-val">{gigsList.filter(g => g.client_id === clientProfile.id).length}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="dashboard-stat-card">
-                    <div className="stat-icon-wrapper client" style={{ color: 'var(--primary)', background: 'rgba(29, 191, 115, 0.1)' }}>
-                      <Coins size={22} />
-                    </div>
-                    <div className="stat-info">
-                      <span className="stat-label">Total Escrow Funded</span>
-                      <span className="stat-val">
-                        ₹{gigsList.filter(g => g.client_id === clientProfile.id).reduce((sum, g) => {
-                          const tx = transactionsList.find(t => t.gig_id === g.id);
-                          return sum + (tx && tx.status !== 'PENDING' ? g.budget : 0);
-                        }, 0).toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="dashboard-stat-card">
-                    <div className="stat-icon-wrapper client" style={{ color: 'var(--accent-cyan)', background: 'rgba(14, 165, 233, 0.1)' }}>
-                      <User size={22} />
-                    </div>
-                    <div className="stat-info">
-                      <span className="stat-label">Freelancers Hired</span>
-                      <span className="stat-val">
-                        {gigsList.filter(g => g.client_id === clientProfile.id && g.freelancer_id !== null).length}
-                      </span>
-                    </div>
-                  </div>
+                {/* Sub-tab selection */}
+                <div className="dashboard-subtabs">
+                  <button 
+                    className={`dashboard-subtab-btn ${activeSubTab === 'PROJECTS' ? 'active' : ''}`}
+                    onClick={() => setActiveSubTab('PROJECTS')}
+                  >
+                    Hiring Ledger & Escrows
+                  </button>
+                  <button 
+                    className={`dashboard-subtab-btn ${activeSubTab === 'NOTES' ? 'active' : ''}`}
+                    onClick={() => setActiveSubTab('NOTES')}
+                  >
+                    Campus Notes Shop (Buy)
+                  </button>
                 </div>
 
-                {/* Client Projects Ledger */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
-                  Hiring Ledger & Active Escrows
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {gigsList.filter(g => g.client_id === clientProfile.id).length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
-                      <Briefcase size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-                      <p>You haven't posted any problems yet. Click "Post a New Project/Problem" to begin.</p>
-                    </div>
-                  ) : (
-                    gigsList.filter(g => g.client_id === clientProfile.id).map(gig => {
-                      const freelancer = FREELANCERS_DB.find(f => f.id === gig.freelancer_id);
-                      const tx = transactionsList.find(t => t.gig_id === gig.id);
+                {activeSubTab === 'PROJECTS' && (
+                  <>
+                    {/* Client Stats Grid */}
+                    <div className="dashboard-stats-grid">
+                      <div className="dashboard-stat-card">
+                        <div className="stat-icon-wrapper client">
+                          <Briefcase size={22} />
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-label">My Posted Problems</span>
+                          <span className="stat-val">{gigsList.filter(g => g.client_id === clientProfile.id).length}</span>
+                        </div>
+                      </div>
                       
-                      return (
-                        <div key={gig.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', border: '1px solid var(--glass-border)', borderRadius: '12px', background: 'var(--bg-secondary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
-                                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff' }}>{gig.title}</span>
-                                <span className={`status-pill ${gig.status.toLowerCase()}`}>{gig.status}</span>
-                              </div>
-                              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                Budget: <strong>₹{gig.budget.toLocaleString('en-IN')}</strong> | Pro Freelancer: <strong>{freelancer ? freelancer.name : (gig.freelancer_id ? 'Specialist Selected' : 'Searching / Unassigned')}</strong>
-                              </div>
-                              {tx && (
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                  <Lock size={10} style={{ color: 'var(--accent-amber)' }} /> Escrow status: <span style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)', fontWeight: '600' }}>{tx.status}</span> {tx.gateway_reference_id && `(Ref: ${tx.gateway_reference_id})`}
+                      <div className="dashboard-stat-card">
+                        <div className="stat-icon-wrapper client" style={{ color: 'var(--primary)', background: 'rgba(29, 191, 115, 0.1)' }}>
+                          <Coins size={22} />
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-label">Total Escrow Funded</span>
+                          <span className="stat-val">
+                            ₹{gigsList.filter(g => g.client_id === clientProfile.id).reduce((sum, g) => {
+                              const tx = transactionsList.find(t => t.gig_id === g.id);
+                              return sum + (tx && tx.status !== 'PENDING' ? g.budget : 0);
+                            }, 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="dashboard-stat-card">
+                        <div className="stat-icon-wrapper client" style={{ color: 'var(--accent-cyan)', background: 'rgba(14, 165, 233, 0.1)' }}>
+                          <User size={22} />
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-label">Freelancers Hired</span>
+                          <span className="stat-val">
+                            {gigsList.filter(g => g.client_id === clientProfile.id && g.freelancer_id !== null).length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Client Projects Ledger */}
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
+                      Hiring Ledger & Active Escrows
+                    </h3>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {gigsList.filter(g => g.client_id === clientProfile.id).length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
+                          <Briefcase size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
+                          <p>You haven't posted any problems yet. Click "Post a New Project/Problem" to begin.</p>
+                        </div>
+                      ) : (
+                        gigsList.filter(g => g.client_id === clientProfile.id).map(gig => {
+                          const freelancer = FREELANCERS_DB.find(f => f.id === gig.freelancer_id);
+                          const tx = transactionsList.find(t => t.gig_id === gig.id);
+                          
+                          return (
+                            <div key={gig.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', border: '1px solid var(--glass-border)', borderRadius: '12px', background: 'var(--bg-secondary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                                    <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff' }}>{gig.title}</span>
+                                    <span className={`status-pill ${gig.status.toLowerCase()}`}>{gig.status}</span>
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                    Budget: <strong>₹{gig.budget.toLocaleString('en-IN')}</strong> | Pro Freelancer: <strong>{freelancer ? freelancer.name : (gig.freelancer_id ? 'Specialist Selected' : 'Searching / Unassigned')}</strong>
+                                  </div>
+                                  {tx && (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                      <Lock size={10} style={{ color: 'var(--accent-amber)' }} /> Escrow status: <span style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)', fontWeight: '600' }}>{tx.status}</span> {tx.gateway_reference_id && `(Ref: ${tx.gateway_reference_id})`}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                  {gig.status === 'DELIVERED' && (
+                                    <button 
+                                      onClick={() => handleApproveAndReleaseForGig(gig)}
+                                      className="btn btn-primary"
+                                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: 'var(--shadow-glow)' }}
+                                    >
+                                      <CheckCircle2 size={12} /> Approve & Release UPI Payout
+                                    </button>
+                                  )}
+
+                                  <button 
+                                    onClick={() => handleSelectActiveProject(gig)}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                                  >
+                                    <ExternalLink size={12} /> Enter Workspace
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {activeSubTab === 'NOTES' && (
+                  <div>
+                    {/* Notes search filter row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>
+                        Campus Notes Marketplace: Study Shop
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {['All', 'Computer Science', 'Analog Electronics', 'Electronics & Comm'].map(sub => (
+                          <button
+                            key={sub}
+                            className={`btn ${noteFilter === sub ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
+                            onClick={() => setNoteFilter(sub)}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Notes grid */}
+                    <div className="notes-grid">
+                      {notesList.filter(n => noteFilter === 'All' || n.subject === noteFilter).map(note => (
+                        <div key={note.id} className="note-card">
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <span className="subject-badge">{note.subject_code || note.subject}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: '700' }}>
+                                <Star size={12} fill="var(--accent-gold)" /> {note.rating}
+                              </div>
+                            </div>
+                            <h4 className="note-title">{note.title}</h4>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+                                {note.seller_avatar || '🎓'}
+                              </div>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{note.seller_name}</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '0.75rem', marginBottom: '0.75rem' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Price</span>
+                              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--primary)' }}>₹{note.price}</span>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                              {gig.status === 'DELIVERED' && (
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button 
+                                className="btn btn-secondary"
+                                style={{ flex: 1, padding: '0.55rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                onClick={() => setSelectedNoteForPreview(note)}
+                              >
+                                <ExternalLink size={12} /> View Preview
+                              </button>
+
+                              {note.purchased ? (
                                 <button 
-                                  onClick={() => handleApproveAndReleaseForGig(gig)}
                                   className="btn btn-primary"
-                                  style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: 'var(--shadow-glow)' }}
+                                  style={{ flex: 1, padding: '0.55rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', background: 'var(--accent-emerald)', borderColor: 'var(--accent-emerald)' }}
+                                  onClick={() => {
+                                    alert(`📥 Starting download: ${note.fileName}\nThank you for purchasing!`);
+                                  }}
                                 >
-                                  <CheckCircle2 size={12} /> Approve & Release UPI Payout
+                                  <Upload size={12} style={{ transform: 'rotate(180deg)' }} /> Download
+                                </button>
+                              ) : (
+                                <button 
+                                  className="btn btn-primary"
+                                  style={{ flex: 1, padding: '0.55rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                  onClick={() => {
+                                    const mockQR = `upi://pay?pa=campusnotes@okaxis&pn=GravityNotes&am=${note.price}&tr=note_${note.id}`;
+                                    setNotesUpiTx({
+                                      ...note,
+                                      qrCode: mockQR
+                                    });
+                                  }}
+                                >
+                                  <QrCode size={12} /> Buy via UPI
                                 </button>
                               )}
-
-                              <button 
-                                onClick={() => handleSelectActiveProject(gig)}
-                                className="btn btn-secondary"
-                                style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                              >
-                                <ExternalLink size={12} /> Enter Workspace
-                              </button>
                             </div>
                           </div>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               /* FREELANCER MODE DASHBOARD */
@@ -1317,205 +1546,435 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* Freelancer Stats Grid */}
-                <div className="dashboard-stats-grid">
-                  <div className="dashboard-stat-card">
-                    <div className="stat-icon-wrapper freelancer">
-                      <Briefcase size={22} />
-                    </div>
-                    <div className="stat-info">
-                      <span className="stat-label">My Active Jobs</span>
-                      <span className="stat-val">
-                        {gigsList.filter(g => g.freelancer_id === freelancerProfile.id && (g.status === 'IN_PROGRESS' || g.status === 'DELIVERED')).length}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="dashboard-stat-card">
-                    <div className="stat-icon-wrapper freelancer" style={{ color: 'var(--accent-emerald)', background: 'rgba(16, 185, 129, 0.1)' }}>
-                      <ShieldCheck size={22} />
-                    </div>
-                    <div className="stat-info">
-                      <span className="stat-label">Escrow Locked / Verified</span>
-                      <span className="stat-val">
-                        {gigsList.filter(g => g.freelancer_id === freelancerProfile.id && g.status === 'IN_PROGRESS').length}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="dashboard-stat-card">
-                    <div className="stat-icon-wrapper freelancer" style={{ color: 'var(--primary)', background: 'rgba(29, 191, 115, 0.1)' }}>
-                      <Coins size={22} />
-                    </div>
-                    <div className="stat-info">
-                      <span className="stat-label">Earnings Ledger (UPI Payouts)</span>
-                      <span className="stat-val">
-                        ₹{gigsList.filter(g => g.freelancer_id === freelancerProfile.id && g.status === 'COMPLETED').reduce((sum, g) => sum + g.budget, 0).toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  </div>
+                {/* Sub-tab selection */}
+                <div className="dashboard-subtabs">
+                  <button 
+                    className={`dashboard-subtab-btn freelancer ${activeSubTab === 'PROJECTS' ? 'active' : ''}`}
+                    onClick={() => setActiveSubTab('PROJECTS')}
+                  >
+                    Active Projects & Claims
+                  </button>
+                  <button 
+                    className={`dashboard-subtab-btn freelancer ${activeSubTab === 'NOTES' ? 'active' : ''}`}
+                    onClick={() => setActiveSubTab('NOTES')}
+                  >
+                    Sell Study Notes (List & Upload)
+                  </button>
                 </div>
 
-                {/* My Active Jobs & Submission Ledger */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1rem' }}>
-                  My Active Contracts & Work Submission Ledger
-                </h3>
+                {activeSubTab === 'PROJECTS' && (
+                  <>
+                    {/* Freelancer Stats Grid */}
+                    <div className="dashboard-stats-grid">
+                      <div className="dashboard-stat-card">
+                        <div className="stat-icon-wrapper freelancer">
+                          <Briefcase size={22} />
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-label">My Active Jobs</span>
+                          <span className="stat-val">
+                            {gigsList.filter(g => g.freelancer_id === freelancerProfile.id && (g.status === 'IN_PROGRESS' || g.status === 'DELIVERED')).length}
+                          </span>
+                        </div>
+                      </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
-                  {gigsList.filter(g => g.freelancer_id === freelancerProfile.id).length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
-                      <Briefcase size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-                      <p>You don't have any active jobs or contracts yet. Browse the available briefs below to get started!</p>
+                      <div className="dashboard-stat-card">
+                        <div className="stat-icon-wrapper freelancer" style={{ color: 'var(--accent-emerald)', background: 'rgba(16, 185, 129, 0.1)' }}>
+                          <ShieldCheck size={22} />
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-label">Escrow Locked / Verified</span>
+                          <span className="stat-val">
+                            {gigsList.filter(g => g.freelancer_id === freelancerProfile.id && g.status === 'IN_PROGRESS').length}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="dashboard-stat-card">
+                        <div className="stat-icon-wrapper freelancer" style={{ color: 'var(--primary)', background: 'rgba(29, 191, 115, 0.1)' }}>
+                          <Coins size={22} />
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-label">Earnings Ledger (UPI Payouts)</span>
+                          <span className="stat-val">
+                            ₹{gigsList.filter(g => g.freelancer_id === freelancerProfile.id && g.status === 'COMPLETED').reduce((sum, g) => sum + g.budget, 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Pro Wallet Card — full-width */}
+                      <div
+                        className="dashboard-stat-card"
+                        style={{
+                          gridColumn: '1 / -1',
+                          background: 'linear-gradient(135deg, rgba(29,191,115,0.12) 0%, rgba(205,164,94,0.08) 100%)',
+                          border: '1px solid rgba(29,191,115,0.35)',
+                          boxShadow: '0 0 24px rgba(29,191,115,0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '1rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div className="stat-icon-wrapper freelancer" style={{ color: 'var(--accent-gold)', background: 'rgba(205,164,94,0.15)', width: '48px', height: '48px' }}>
+                            <DollarSign size={24} />
+                          </div>
+                          <div>
+                            <span className="stat-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.15rem' }}>💼 Pro Wallet Balance</span>
+                            <span style={{ fontSize: '1.65rem', fontWeight: '900', color: 'var(--accent-gold)', letterSpacing: '-0.5px' }}>
+                              ₹{proWallet.toLocaleString('en-IN')}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.1rem' }}>
+                              Notes sales + project payouts are auto-credited here
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          className="btn btn-primary"
+                          style={{
+                            background: 'linear-gradient(135deg, var(--accent-gold), #b8860b)',
+                            borderColor: 'var(--accent-gold)',
+                            color: '#08090d',
+                            fontWeight: '800',
+                            padding: '0.6rem 1.4rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            fontSize: '0.85rem'
+                          }}
+                          onClick={() => {
+                            setWithdrawUpi(freelancerProfile.vpa || '');
+                            setWithdrawAmount('');
+                            setWithdrawSuccess(false);
+                            setWithdrawModalOpen(true);
+                          }}
+                          disabled={proWallet <= 0}
+                        >
+                          <Send size={14} /> Withdraw to UPI
+                        </button>
+                      </div>
                     </div>
-                  ) : (
-                    gigsList.filter(g => g.freelancer_id === freelancerProfile.id).map(gig => {
-                      const tx = transactionsList.find(t => t.gig_id === gig.id);
-                      
-                      return (
-                        <div key={gig.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', border: '1px solid var(--glass-border)', borderRadius: '12px', background: 'var(--bg-secondary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
-                                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff' }}>{gig.title}</span>
-                                <span className={`status-pill ${gig.status.toLowerCase()}`}>{gig.status}</span>
+
+                    {/* My Active Jobs & Submission Ledger */}
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1rem' }}>
+                      My Active Contracts & Work Submission Ledger
+                    </h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
+                      {gigsList.filter(g => g.freelancer_id === freelancerProfile.id).length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
+                          <Briefcase size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
+                          <p>You don't have any active jobs or contracts yet. Browse the available briefs below to get started!</p>
+                        </div>
+                      ) : (
+                        gigsList.filter(g => g.freelancer_id === freelancerProfile.id).map(gig => {
+                          const tx = transactionsList.find(t => t.gig_id === gig.id);
+                          
+                          return (
+                            <div key={gig.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', border: '1px solid var(--glass-border)', borderRadius: '12px', background: 'var(--bg-secondary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                                    <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff' }}>{gig.title}</span>
+                                    <span className={`status-pill ${gig.status.toLowerCase()}`}>{gig.status}</span>
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                    Budget: <strong>₹{gig.budget.toLocaleString('en-IN')}</strong> | Escrow VPA: <strong>escrow@razorpay</strong>
+                                  </div>
+                                  {tx && (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                      <Lock size={10} style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)' }} /> Escrow Status: <span style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)', fontWeight: '600' }}>{tx.status} (Verified)</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <button 
+                                  onClick={() => handleSelectActiveProject(gig)}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                                >
+                                  <ExternalLink size={12} /> Enter Workspace
+                                </button>
                               </div>
-                              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                Budget: <strong>₹{gig.budget.toLocaleString('en-IN')}</strong> | Escrow VPA: <strong>escrow@razorpay</strong>
-                              </div>
-                              {tx && (
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                  <Lock size={10} style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)' }} /> Escrow Status: <span style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)', fontWeight: '600' }}>{tx.status} (Verified)</span>
+
+                              {/* Work submission form inline inside ledger row */}
+                              {gig.status === 'IN_PROGRESS' && (
+                                <div className="submission-form-container">
+                                  <h4 className="submission-form-title">
+                                    <Upload size={12} /> Submit Deliverables for Client Review
+                                  </h4>
+                                  <div className="submission-input-group">
+                                    <input 
+                                      type="text" 
+                                      placeholder="GitHub Repository, LinkedIn, or Blender link" 
+                                      className="submission-input" 
+                                      value={deliverableUrls[gig.id] || ""}
+                                      onChange={e => setDeliverableUrls({ ...deliverableUrls, [gig.id]: e.target.value })}
+                                    />
+                                    <input 
+                                      type="text" 
+                                      placeholder="Describe what you did (e.g., Completed layout, optimized routers)" 
+                                      className="submission-input" 
+                                      value={deliverableNotes[gig.id] || ""}
+                                      onChange={e => setDeliverableNotes({ ...deliverableNotes, [gig.id]: e.target.value })}
+                                    />
+                                  </div>
+                                  <button 
+                                    className="btn btn-primary"
+                                    style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                                    onClick={() => {
+                                      if (!(deliverableUrls[gig.id] || "").trim()) {
+                                        alert("Please provide a deliverable project URL.");
+                                        return;
+                                      }
+                                      handleDeliverWorkForGig(gig, deliverableUrls[gig.id], deliverableNotes[gig.id]);
+                                    }}
+                                  >
+                                    Submit Work
+                                  </button>
+                                </div>
+                              )}
+
+                              {gig.status === 'DELIVERED' && (
+                                <div style={{ background: 'rgba(205, 164, 94, 0.05)', border: '1px dashed rgba(205, 164, 94, 0.2)', padding: '0.75rem 1rem', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold)' }}>
+                                  📦 <strong>Deliverables submitted!</strong> Awaiting client's review and instant UPI escrow release.
+                                </div>
+                              )}
+
+                              {gig.status === 'COMPLETED' && (
+                                <div style={{ background: 'rgba(29, 191, 115, 0.05)', border: '1px dashed rgba(29, 191, 115, 0.2)', padding: '0.75rem 1rem', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--primary)' }}>
+                                  🎉 <strong>Payout Released!</strong> Payout amount of ₹{gig.budget.toLocaleString('en-IN')} was successfully transferred to your UPI VPA: {freelancerProfile.vpa}.
                                 </div>
                               )}
                             </div>
+                          );
+                        })
+                      )}
+                    </div>
 
-                            <button 
-                              onClick={() => handleSelectActiveProject(gig)}
-                              className="btn btn-secondary"
-                              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                            >
-                              <ExternalLink size={12} /> Enter Workspace
-                            </button>
-                          </div>
+                    {/* Browse Active Problems / Gigs Feed */}
+                    <h3 className="browse-feed-title">
+                      <Sparkles size={16} color="var(--accent-gold)" /> Browse Active Marketplace Problems & Briefs
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                      Select a problem posted by clients, claim it, and lock their deposited escrow budget to your solution terminal.
+                    </p>
 
-                          {/* Work submission form inline inside ledger row */}
-                          {gig.status === 'IN_PROGRESS' && (
-                            <div className="submission-form-container">
-                              <h4 className="submission-form-title">
-                                <Upload size={12} /> Submit Deliverables for Client Review
-                              </h4>
-                              <div className="submission-input-group">
-                                <input 
-                                  type="text" 
-                                  placeholder="GitHub Repository, LinkedIn, or Blender link" 
-                                  className="submission-input" 
-                                  value={deliverableUrls[gig.id] || ""}
-                                  onChange={e => setDeliverableUrls({ ...deliverableUrls, [gig.id]: e.target.value })}
-                                />
-                                <input 
-                                  type="text" 
-                                  placeholder="Describe what you did (e.g., Completed layout, optimized routers)" 
-                                  className="submission-input" 
-                                  value={deliverableNotes[gig.id] || ""}
-                                  onChange={e => setDeliverableNotes({ ...deliverableNotes, [gig.id]: e.target.value })}
-                                />
+                    <div className="browse-gigs-grid">
+                      {gigsList.filter(g => g.status === 'OPEN').length === 0 ? (
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
+                          <p>No open client problems found. Go to Client Mode to post a new problem brief!</p>
+                        </div>
+                      ) : (
+                        gigsList.filter(g => g.status === 'OPEN').map(gig => (
+                          <div key={gig.id} className="browse-gig-card">
+                            <div>
+                              <div className="browse-gig-header">
+                                <h4 className="browse-gig-title">{gig.title}</h4>
+                                <span className="browse-gig-budget">₹{gig.budget.toLocaleString('en-IN')}</span>
                               </div>
+                              <p className="browse-gig-desc">{gig.description}</p>
+                            </div>
+                            
+                            <div className="browse-gig-footer">
+                              <div className="browse-skills-list">
+                                {(gig.required_skills || "Figma, React").split(',').map((skill, index) => (
+                                  <span key={index} className="browse-skill-tag">{skill.trim()}</span>
+                                ))}
+                              </div>
+                              
                               <button 
-                                className="btn btn-primary"
-                                style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                                className="btn btn-secondary"
+                                style={{ padding: '0.45rem 0.9rem', fontSize: '0.75rem', borderColor: 'var(--accent-gold)', color: 'var(--accent-gold)' }}
                                 onClick={() => {
-                                  if (!(deliverableUrls[gig.id] || "").trim()) {
-                                    alert("Please provide a deliverable project URL.");
-                                    return;
-                                  }
-                                  handleDeliverWorkForGig(gig, deliverableUrls[gig.id], deliverableNotes[gig.id]);
+                                  const updatedGig = {
+                                    ...gig,
+                                    freelancer_id: freelancerProfile.id,
+                                    status: 'IN_PROGRESS'
+                                  };
+                                  const newTx = {
+                                    id: "tx_" + Math.random().toString(36).substring(2, 11),
+                                    gig_id: gig.id,
+                                    amount: gig.budget,
+                                    gateway_reference_id: "pay_ref_" + Math.random().toString(36).substring(2, 9),
+                                    status: 'ESCROW_LOCKED',
+                                    client_vpa: clientProfile.vpa,
+                                    freelancer_vpa: freelancerProfile.vpa,
+                                    created_at: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                  };
+                                  setGigsList(prev => prev.map(g => g.id === gig.id ? updatedGig : g));
+                                  setTransactionsList(prev => [newTx, ...prev]);
+                                  alert(`Success! You accepted the gig: "${gig.title}". The escrow budget of ₹${gig.budget.toLocaleString('en-IN')} has been LOCKED. Switch to active jobs above to submit completed work.`);
                                 }}
                               >
-                                Submit Work
+                                Apply & Solve Gig
                               </button>
                             </div>
-                          )}
-
-                          {gig.status === 'DELIVERED' && (
-                            <div style={{ background: 'rgba(205, 164, 94, 0.05)', border: '1px dashed rgba(205, 164, 94, 0.2)', padding: '0.75rem 1rem', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold)' }}>
-                              📦 <strong>Deliverables submitted!</strong> Awaiting client's review and instant UPI escrow release.
-                            </div>
-                          )}
-
-                          {gig.status === 'COMPLETED' && (
-                            <div style={{ background: 'rgba(29, 191, 115, 0.05)', border: '1px dashed rgba(29, 191, 115, 0.2)', padding: '0.75rem 1rem', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--primary)' }}>
-                              🎉 <strong>Payout Released!</strong> Payout amount of ₹{gig.budget.toLocaleString('en-IN')} was successfully transferred to your UPI VPA: {freelancerProfile.vpa}.
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Browse Active Problems / Gigs Feed */}
-                <h3 className="browse-feed-title">
-                  <Sparkles size={16} color="var(--accent-gold)" /> Browse Active Marketplace Problems & Briefs
-                </h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-                  Select a problem posted by clients, claim it, and lock their deposited escrow budget to your solution terminal.
-                </p>
-
-                <div className="browse-gigs-grid">
-                  {gigsList.filter(g => g.status === 'OPEN').length === 0 ? (
-                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
-                      <p>No open client problems found. Go to Client Mode to post a new problem brief!</p>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  ) : (
-                    gigsList.filter(g => g.status === 'OPEN').map(gig => (
-                      <div key={gig.id} className="browse-gig-card">
-                        <div>
-                          <div className="browse-gig-header">
-                            <h4 className="browse-gig-title">{gig.title}</h4>
-                            <span className="browse-gig-budget">₹{gig.budget.toLocaleString('en-IN')}</span>
-                          </div>
-                          <p className="browse-gig-desc">{gig.description}</p>
-                        </div>
-                        
-                        <div className="browse-gig-footer">
-                          <div className="browse-skills-list">
-                            {(gig.required_skills || "Figma, React").split(',').map((skill, index) => (
-                              <span key={index} className="browse-skill-tag">{skill.trim()}</span>
-                            ))}
-                          </div>
-                          
-                          <button 
-                            className="btn btn-secondary"
-                            style={{ padding: '0.45rem 0.9rem', fontSize: '0.75rem', borderColor: 'var(--accent-gold)', color: 'var(--accent-gold)' }}
-                            onClick={() => {
-                              const updatedGig = {
-                                ...gig,
-                                freelancer_id: freelancerProfile.id,
-                                status: 'IN_PROGRESS'
-                              };
-                              const newTx = {
-                                id: "tx_" + Math.random().toString(36).substring(2, 11),
-                                gig_id: gig.id,
-                                amount: gig.budget,
-                                gateway_reference_id: "pay_ref_" + Math.random().toString(36).substring(2, 9),
-                                status: 'ESCROW_LOCKED',
-                                client_vpa: clientProfile.vpa,
-                                freelancer_vpa: freelancerProfile.vpa,
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString()
-                              };
-                              setGigsList(prev => prev.map(g => g.id === gig.id ? updatedGig : g));
-                              setTransactionsList(prev => [newTx, ...prev]);
-                              alert(`Success! You accepted the gig: "${gig.title}". The escrow budget of ₹${gig.budget.toLocaleString('en-IN')} has been LOCKED. Switch to active jobs above to submit completed work.`);
-                            }}
+                  </>
+                )}
+
+                {activeSubTab === 'NOTES' && (
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1.25rem' }}>
+                      List Study Materials for Campus Sale
+                    </h3>
+                    
+                    <form onSubmit={handlePublishNotes} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '2rem', marginBottom: '2rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                          <label className="form-label">Subject & Subject Category</label>
+                          <select 
+                            className="form-input"
+                            value={noteForm.subject}
+                            onChange={e => setNoteForm({ ...noteForm, subject: e.target.value })}
                           >
-                            Apply & Solve Gig
-                          </button>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Analog Electronics">Analog Electronics</option>
+                            <option value="Electronics & Comm">Electronics & Comm</option>
+                            <option value="Mechanical Eng">Mechanical Eng</option>
+                            <option value="Electrical Eng">Electrical Eng</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Subject Code</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="e.g. EE-204, CS-302"
+                            className="form-input"
+                            value={noteForm.subject_code}
+                            onChange={e => setNoteForm({ ...noteForm, subject_code: e.target.value })}
+                          />
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                          <label className="form-label">Study Notes Title</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="e.g. Analog Electronics Complete Derivations"
+                            className="form-input"
+                            value={noteForm.title}
+                            onChange={e => setNoteForm({ ...noteForm, title: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Listing Price (₹)</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontWeight: '700', fontSize: '0.9rem' }}>₹</span>
+                            <input 
+                              type="number" 
+                              required
+                              placeholder="e.g. 49"
+                              className="form-input"
+                              style={{ paddingLeft: '1.75rem' }}
+                              value={noteForm.price}
+                              onChange={e => setNoteForm({ ...noteForm, price: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                          <label className="form-label">Free Preview Pages Selection</label>
+                          <select 
+                            className="form-input"
+                            value={noteForm.preview_pages}
+                            onChange={e => setNoteForm({ ...noteForm, preview_pages: e.target.value })}
+                          >
+                            <option value="Page 1">Page 1</option>
+                            <option value="Page 1-2">Page 1-2</option>
+                            <option value="Page 1-3">Page 1-3</option>
+                          </select>
+                        </div>
+                        
+                        <div className="form-group">
+                          <label className="form-label">PDF Study Material Upload</label>
+                          {/* Premium Drag and Drop zone simulation */}
+                          <div 
+                            className="drag-drop-zone"
+                            onClick={() => {
+                              // Simulate file picker selection
+                              const simulatedFiles = [
+                                "ee204_analog_electronics_handwritten.pdf",
+                                "cs302_dbms_final_review.pdf",
+                                "ec201_network_theorems.pdf",
+                                "math202_laplace_transforms.pdf"
+                              ];
+                              const randomFile = simulatedFiles[Math.floor(Math.random() * simulatedFiles.length)];
+                              setUploadedFileName(randomFile);
+                            }}
+                          >
+                            <Upload size={22} style={{ color: 'var(--accent-gold)' }} />
+                            {uploadedFileName ? (
+                              <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '700' }}>
+                                ✓ {uploadedFileName} attached (Ready to publish)
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: '0.75rem' }}>
+                                Click to upload study notes PDF file (Max 25MB)
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem', background: 'var(--accent-gold)', borderColor: 'var(--accent-gold)', color: '#08090d' }}>
+                        <Sparkles size={14} style={{ marginRight: '0.25rem' }} /> Publish Notes to Campus Marketplace
+                      </button>
+                    </form>
+
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1rem' }}>
+                      My Listed Notes & Earnings
+                    </h3>
+
+                    <div className="notes-grid">
+                      {notesList.filter(n => n.seller_id === freelancerProfile.id).length === 0 ? (
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
+                          <p>You haven't listed any study notes yet. Use the form above to post your first material!</p>
+                        </div>
+                      ) : (
+                        notesList.filter(n => n.seller_id === freelancerProfile.id).map(note => (
+                          <div key={note.id} className="note-card freelancer">
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <span className="subject-badge freelancer">{note.subject_code || note.subject}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: '700' }}>
+                                  <Star size={12} fill="var(--accent-gold)" /> {note.rating}
+                                </div>
+                              </div>
+                              <h4 className="note-title">{note.title}</h4>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                📄 File: <strong>{note.fileName}</strong> | Preview: <strong>{note.preview_pages}</strong>
+                              </div>
+                            </div>
+
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '0.75rem', marginBottom: '0.75rem' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Price</span>
+                                <span style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--accent-gold)' }}>₹{note.price}</span>
+                              </div>
+                              
+                              <div style={{ background: 'rgba(29, 191, 115, 0.05)', border: '1px solid rgba(29, 191, 115, 0.15)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--primary)', textAlign: 'center', fontWeight: '700' }}>
+                                ● Live on Campus Shop
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2248,9 +2707,324 @@ export default function App() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
+
+      {/* PDF study notes preview modal */}
+      {selectedNoteForPreview && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                📄 Study Notes Preview: {selectedNoteForPreview.subject_code}
+              </h2>
+              <button className="modal-close" onClick={() => setSelectedNoteForPreview(null)}>×</button>
+            </div>
+            
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              Title: <strong>{selectedNoteForPreview.title}</strong>
+            </p>
+
+            <div className="pdf-preview-container">
+              {/* Page 1 (Simulated study note paper page) */}
+              <div className="pdf-page-sim">
+                <div className="pdf-page-sim-header">
+                  <span>{selectedNoteForPreview.subject_code} - study notes</span>
+                  <span>Page 1 of 3</span>
+                </div>
+                <div className="pdf-page-sim-content">
+                  <h4>1. Introduction & Basic Theorems</h4>
+                  <p>Study notes covering key formulas, derivation steps, and lecture summaries for exclusive university study references.</p>
+                  <p>Let the general transfer function be defined as:</p>
+                  <div style={{ textAlign: 'center', margin: '0.85rem 0', fontWeight: '800', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                    H(s) = A(s) / B(s) = Σ a_i s^i / (1 + Σ b_j s^j)
+                  </div>
+                  <p>Where <code>a_i</code> represents feedback coefficients and poles are defined at roots of B(s) = 0.</p>
+                  <div className="pdf-page-sim-diagram">
+                    [ Diagram: Feedback Loop Topology ]
+                  </div>
+                </div>
+                <div className="pdf-page-sim-footer">
+                  <span>gravity.pro campus shop</span>
+                  <span>Confidential Study Material</span>
+                </div>
+              </div>
+
+              {/* Page 2 (Simulated study note paper page) */}
+              <div className="pdf-page-sim">
+                <div className="pdf-page-sim-header">
+                  <span>{selectedNoteForPreview.subject_code} - study notes</span>
+                  <span>Page 2 of 3</span>
+                </div>
+                <div className="pdf-page-sim-content">
+                  <h4>2. Derivations & Convolution Theorems</h4>
+                  <p>Applying the Laplace transform on both sides of the differential equation:</p>
+                  <p>For input <code>x(t) = e^(-at) u(t)</code>, the Laplace transform results in:</p>
+                  <div style={{ textAlign: 'center', margin: '0.85rem 0', fontWeight: '800', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                    X(s) = 1 / (s + a), Re{s} > -a
+                  </div>
+                  <p>By convolution theorem, the output response is given by the product H(s)X(s).</p>
+                  <p>Substituting initial conditions into the transient state equations yields the homogeneous solutions.</p>
+                </div>
+                <div className="pdf-page-sim-footer">
+                  <span>gravity.pro campus shop</span>
+                  <span>Confidential Study Material</span>
+                </div>
+              </div>
+
+              {/* Page 3 (Simulated study note paper page with locked overlay) */}
+              <div className="pdf-page-sim">
+                <div className="pdf-page-sim-header">
+                  <span>{selectedNoteForPreview.subject_code} - study notes</span>
+                  <span>Page 3 of 3</span>
+                </div>
+                <div className="pdf-page-sim-content" style={{ opacity: 0.2 }}>
+                  <h4>3. Advanced Practice Exercises & Solutions</h4>
+                  <p>Let's calculate the system stability margin for different damping coefficients. If the open-loop gain is increased to...</p>
+                  <p>The state-space representation can be written as:</p>
+                  <div style={{ textAlign: 'center', margin: '0.5rem 0', fontWeight: '800', fontFamily: 'monospace' }}>
+                    dx/dt = Ax + Bu
+                  </div>
+                </div>
+
+                <div className="pdf-blur-overlay">
+                  <div className="pdf-lock-box">
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.5rem' }}>
+                      Remaining Pages Locked
+                    </h4>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: '1.4' }}>
+                      Pay the student creator to unlock and download this entire 12-page study guide PDF.
+                    </p>
+
+                    {selectedNoteForPreview.purchased ? (
+                      <button 
+                        className="btn btn-primary"
+                        style={{ width: '100%', fontSize: '0.8rem', background: 'var(--accent-emerald)', borderColor: 'var(--accent-emerald)' }}
+                        onClick={() => {
+                          setSelectedNoteForPreview(null);
+                          alert(`📥 Starting download: ${selectedNoteForPreview.fileName}`);
+                        }}
+                      >
+                        Download Complete PDF
+                      </button>
+                    ) : (
+                      <button 
+                        className="btn btn-primary"
+                        style={{ width: '100%', fontSize: '0.8rem' }}
+                        onClick={() => {
+                          const mockQR = `upi://pay?pa=campusnotes@okaxis&pn=GravityNotes&am=${selectedNoteForPreview.price}&tr=note_${selectedNoteForPreview.id}`;
+                          setNotesUpiTx({
+                            ...selectedNoteForPreview,
+                            qrCode: mockQR
+                          });
+                          setSelectedNoteForPreview(null);
+                        }}
+                      >
+                        Pay ₹{selectedNoteForPreview.price} to Unlock
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pdf-page-sim-footer">
+                  <span>gravity.pro campus shop</span>
+                  <span>Confidential Study Material</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSelectedNoteForPreview(null)}>
+                Close Preview
+              </button>
+              
+              {!selectedNoteForPreview.purchased && (
+                <button 
+                  className="btn btn-primary" 
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    const mockQR = `upi://pay?pa=campusnotes@okaxis&pn=GravityNotes&am=${selectedNoteForPreview.price}&tr=note_${selectedNoteForPreview.id}`;
+                    setNotesUpiTx({
+                      ...selectedNoteForPreview,
+                      qrCode: mockQR
+                    });
+                    setSelectedNoteForPreview(null);
+                  }}
+                >
+                  Buy Complete Notes (₹{selectedNoteForPreview.price})
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mock UPI payment modal for notes */}
+      {notesUpiTx && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div className="modal-header">
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}>
+                <QrCode size={18} color="var(--primary)" /> UPI Note Purchase
+              </h2>
+              <button className="modal-close" onClick={() => setNotesUpiTx(null)}>×</button>
+            </div>
+
+            <div style={{ margin: '1.5rem 0' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                You are purchasing:
+              </p>
+              <h4 style={{ fontSize: '1rem', fontWeight: '700', color: '#ffffff', marginBottom: '0.75rem' }}>
+                {notesUpiTx.title}
+              </h4>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Seller VPA: <code>{notesUpiTx.seller_id}@okaxis</code>
+              </p>
+
+              {/* QR Code Graphic Box */}
+              <div style={{ width: '180px', height: '180px', background: '#ffffff', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: '1.5rem auto', padding: '0.75rem', boxShadow: '0 4px 20px rgba(29, 191, 115, 0.15)' }}>
+                <QrCode size={130} color="#08090d" />
+                <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: '800', marginTop: '0.5rem', letterSpacing: '0.05em' }}>GRAVITY PRO MOCK UPI</span>
+              </div>
+
+              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary)', marginBottom: '0.5rem' }}>
+                ₹{notesUpiTx.price}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', maxWidth: '300px', margin: '0 auto' }}>
+                Scan the QR code using any active UPI app (GPay, PhonePe, Paytm) to complete payment.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <button className="btn btn-secondary" style={{ flex: 1, padding: '0.6rem', fontSize: '0.8rem' }} onClick={() => setNotesUpiTx(null)}>
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                onClick={handleConfirmNotesPayment}
+              >
+                <CheckCircle2 size={14} /> Simulate Success
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== PRO WALLET — WITHDRAW TO UPI MODAL ========== */}
+      {withdrawModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '420px' }}>
+            <div className="modal-header">
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <DollarSign size={18} color="var(--accent-gold)" /> Withdraw to UPI
+              </h2>
+              <button className="modal-close" onClick={() => { setWithdrawModalOpen(false); setWithdrawSuccess(false); }}>×</button>
+            </div>
+
+            {!withdrawSuccess ? (
+              <>
+                {/* Wallet Balance Banner */}
+                <div style={{ background: 'linear-gradient(135deg, rgba(205,164,94,0.12), rgba(29,191,115,0.08))', border: '1px solid rgba(205,164,94,0.25)', borderRadius: '10px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Available Balance</span>
+                  <span style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--accent-gold)' }}>₹{proWallet.toLocaleString('en-IN')}</span>
+                </div>
+
+                {/* UPI ID input */}
+                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                  <label className="form-label">UPI ID (VPA)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="yourname@okaxis"
+                    value={withdrawUpi}
+                    onChange={e => setWithdrawUpi(e.target.value)}
+                  />
+                </div>
+
+                {/* Amount input */}
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Withdrawal Amount (₹)</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontWeight: '700' }}>₹</span>
+                    <input
+                      type="number"
+                      className="form-input"
+                      style={{ paddingLeft: '1.75rem' }}
+                      placeholder={`Max ₹${proWallet}`}
+                      value={withdrawAmount}
+                      max={proWallet}
+                      min={1}
+                      onChange={e => setWithdrawAmount(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                    {[25, 50, 100].map(pct => (
+                      <button
+                        key={pct}
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '0.25rem 0.65rem', fontSize: '0.72rem', borderColor: 'var(--glass-border)' }}
+                        onClick={() => setWithdrawAmount(String(Math.floor(proWallet * pct / 100)))}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '0.25rem 0.65rem', fontSize: '0.72rem', borderColor: 'var(--accent-gold)', color: 'var(--accent-gold)' }}
+                      onClick={() => setWithdrawAmount(String(proWallet))}
+                    >
+                      Withdraw All
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setWithdrawModalOpen(false)}>Cancel</button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 1, background: 'linear-gradient(135deg, var(--accent-gold), #b8860b)', borderColor: 'var(--accent-gold)', color: '#08090d', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                    onClick={() => {
+                      const amt = parseFloat(withdrawAmount);
+                      if (!withdrawUpi.trim()) { alert('Please enter a valid UPI ID.'); return; }
+                      if (!amt || amt <= 0 || amt > proWallet) { alert(`Please enter a valid amount between ₹1 and ₹${proWallet}.`); return; }
+                      // Deduct from wallet and show success
+                      setProWallet(prev => prev - amt);
+                      setWithdrawSuccess(true);
+                    }}
+                  >
+                    <Send size={14} /> Confirm Withdrawal
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Success State */
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem' }}>🎉</div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--primary)', marginBottom: '0.5rem' }}>Withdrawal Initiated!</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '1rem' }}>
+                  ₹<strong style={{ color: '#ffffff' }}>{withdrawAmount}</strong> is being transferred to
+                </p>
+                <div style={{ background: 'rgba(29,191,115,0.08)', border: '1px solid rgba(29,191,115,0.2)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.5rem' }}>
+                  <code style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: '700' }}>{withdrawUpi}</code>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Funds will arrive within 1–2 hours. Updated wallet balance: <strong style={{ color: 'var(--accent-gold)' }}>₹{proWallet.toLocaleString('en-IN')}</strong></p>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%', background: 'var(--accent-emerald)', borderColor: 'var(--accent-emerald)' }}
+                  onClick={() => { setWithdrawModalOpen(false); setWithdrawSuccess(false); }}
+                >
+                  <CheckCircle2 size={14} style={{ marginRight: '0.35rem' }} /> Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      </div>
+    );
+  }
 
 // Mock crypto generator
 function requireCryptoMock() {
