@@ -801,7 +801,7 @@ export default function App() {
     <div className="app-container">
       {/* Header */}
       <header className="header">
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="header-branding">
           <div className="logo" onClick={() => setPage('HOME')}>
             gravity<span className="logo-dot">.</span>
             <span className="logo-pro-badge">pro</span>
@@ -809,9 +809,9 @@ export default function App() {
           <span className="badge-tag">UPI ESCROW</span>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="header-controls">
           {/* Dashboard Navigator */}
-          <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '6px', border: '1px solid var(--glass-border)', marginRight: '1rem' }}>
+          <div className="header-nav-group">
             <button 
               className="btn" 
               onClick={() => {
@@ -830,22 +830,24 @@ export default function App() {
             </button>
           </div>
 
-          <button 
-            onClick={toggleTheme} 
-            className="btn btn-secondary" 
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem', width: '32px', height: '32px', borderRadius: '50%' }}
-            title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
+          <div className="header-action-group">
+            <button 
+              onClick={toggleTheme} 
+              className="btn btn-secondary" 
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem', width: '32px', height: '32px', borderRadius: '50%' }}
+              title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
 
-          <button 
-            onClick={handleOpenProfileEditor} 
-            className="btn btn-secondary" 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-          >
-            <Settings size={14} /> Profile Setup
-          </button>
+            <button 
+              onClick={handleOpenProfileEditor} 
+              className="btn btn-secondary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+            >
+              <Settings size={14} /> Profile Setup
+            </button>
+          </div>
         </div>
       </header>
 
