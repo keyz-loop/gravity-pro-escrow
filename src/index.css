@@ -815,12 +815,14 @@ body {
 }
 
 .popular-tag-badge {
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.35rem 0.85rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.3rem 0.75rem;
   border-radius: 20px;
   color: white;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 0.8rem;
+  font-weight: 500;
   transition: all 0.2s ease;
 }
 
@@ -828,6 +830,33 @@ body {
   background: var(--accent-gold);
   color: #08090d;
   border-color: var(--accent-gold);
+}
+
+.hero-subtext {
+  padding: 0 0.5rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.inline-sub-nav {
+  position: sticky;
+  top: 70px;
+  z-index: 90;
+  margin-top: 2.5rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-border);
+  background: var(--bg-primary);
+  border-radius: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+@media (min-width: 768px) {
+  .inline-sub-nav {
+    top: 85px;
+    margin-top: 3.5rem;
+    margin-bottom: 3.5rem;
+  }
 }
 
 /* Service Card slider mock */
@@ -1275,7 +1304,7 @@ body {
   }
 
   .home-hero {
-    padding: 3rem 1.5rem;
+    padding: 5rem 1.5rem 2.5rem; /* safe top padding to prevent header overlap */
     margin-bottom: 2.5rem;
   }
 
@@ -1286,6 +1315,12 @@ body {
   .sub-nav {
     padding: 0.8rem 1rem;
     gap: 1.25rem;
+    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+  }
+
+  .sub-nav::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome, Safari, Opera */
   }
 
   .site-footer {
@@ -1357,6 +1392,9 @@ body {
   
   .popular-tag-badge {
     flex: 0 0 auto;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.65rem;
+    background: rgba(255, 255, 255, 0.12);
   }
 }
 
@@ -1367,7 +1405,7 @@ body {
     background: transparent;
     border: none;
     box-shadow: none;
-    gap: 0.75rem;
+    gap: 0.75rem; /* space-y-3 */
     width: 100%;
     max-width: 100%;
   }
@@ -1375,7 +1413,7 @@ body {
   .home-search input {
     background: var(--bg-secondary);
     border: 2px solid var(--glass-border);
-    border-radius: 8px;
+    border-radius: 12px; /* rounded-xl */
     padding: 1rem 1.25rem;
     width: 100%;
     height: 52px;
@@ -1392,19 +1430,22 @@ body {
   .home-search button {
     background: linear-gradient(135deg, var(--accent-gold), #b28c4e);
     color: #08090d;
-    padding: 0 1.5rem;
-    border-radius: 8px;
+    padding: 1rem 1.25rem; /* uniform padding */
+    border-radius: 12px; /* rounded-xl */
     width: 100%;
     height: 52px;
     font-size: 1rem;
     font-weight: 800;
     justify-content: center;
+    display: flex;
+    align-items: center;
     box-shadow: 0 4px 12px rgba(205, 164, 94, 0.2);
+    border: none;
   }
 }
 
 @media (max-width: 480px) {
   .home-hero {
-    padding: 2rem 1rem;
+    padding: 4.5rem 1.25rem 2rem; /* safe top padding to prevent header overlap */
   }
 }

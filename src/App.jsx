@@ -907,21 +907,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Clickable sub-navigation categories (FILTERS FREELANCERS) */}
-      <div className="sub-nav-container">
-        <div className="sub-nav">
-          {CATEGORIES_LIST.map((cat, i) => (
-            <span 
-              key={i}
-              className={page === 'BRIEF' && activeCategory === cat ? 'active' : ''}
-              onClick={() => handleCategoryClick(cat)}
-            >
-              {cat}
-            </span>
-          ))}
-        </div>
-      </div>
-
       {/* Main Grid View */}
       <main className="main-content">
         
@@ -931,7 +916,7 @@ export default function App() {
             {/* Stunning large hero section */}
             <div className="home-hero">
               <h1>Find the perfect Pro talent for your enterprise vision.</h1>
-              <p>Work with vetted freelance talent under secure escrow contracts.</p>
+              <p className="hero-subtext">Work with vetted freelance talent under secure escrow contracts.</p>
               
               <div className="home-search">
                 <input 
@@ -961,8 +946,23 @@ export default function App() {
               </div>
             </div>
 
+            {/* Inline Category Navigation Row (repositioned below the green card) */}
+            <div className="sub-nav-container inline-sub-nav">
+              <div className="sub-nav">
+                {CATEGORIES_LIST.map((cat, i) => (
+                  <span 
+                    key={i}
+                    className={activeCategory === cat ? 'active' : ''}
+                    onClick={() => handleCategoryClick(cat)}
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            </div>
+
             {/* Popular service categories row */}
-            <h2 className="section-title">Popular Pro services</h2>
+            <h2 className="section-title" style={{ marginTop: '2.5rem' }}>Popular Pro services</h2>
             <div className="service-grid">
               {POPULAR_SERVICES.map((s, i) => (
                 <div key={i} className="service-card" onClick={() => handleCategoryClick(s.category)}>
@@ -1113,6 +1113,21 @@ export default function App() {
         {/* 3. BRIEF SUBMISSION & MULTI-STEP CONTRACT WORKSPACE */}
         {page === 'BRIEF' && (
           <div>
+            {/* Category sub-navigation categories (FILTERS FREELANCERS) */}
+            <div className="sub-nav-container">
+              <div className="sub-nav">
+                {CATEGORIES_LIST.map((cat, i) => (
+                  <span 
+                    key={i}
+                    className={activeCategory === cat ? 'active' : ''}
+                    onClick={() => handleCategoryClick(cat)}
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            </div>
+
             {/* Stepper Progress bar */}
             <div className="stepper">
               <div className={`step-node ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
