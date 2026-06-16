@@ -46,7 +46,7 @@ const FREELANCERS_DB = [
     reviews: 42,
     skills: ["Figma", "UI/UX", "Tailwind", "Logo Design"],
     aesthetic_style: "Minimalist",
-    portfolio_links: { behance: "https://behance.net/riyapatel", github: "https://github.com/riyapatel" },
+    portfolio_links: { linkedin: "https://linkedin.com/in/riyapatel", github: "https://github.com/riyapatel" },
     vpa: "riyapatel@okaxis",
     avatar: "🎨",
     gig_title: "I will design a modern minimalist landing page for your Web3 App",
@@ -97,7 +97,7 @@ const FREELANCERS_DB = [
     reviews: 19,
     skills: ["Figma", "Three.js", "GLSL", "Blender"],
     aesthetic_style: "Cyberpunk",
-    portfolio_links: { behance: "https://behance.net/kabir3d", github: "https://github.com/kabirmehta" },
+    portfolio_links: { linkedin: "https://linkedin.com/in/kabirmehta", github: "https://github.com/kabirmehta" },
     vpa: "kabirmehta@okaxis",
     avatar: "⚡",
     gig_title: "I will craft 3D websites with interactive GLSL shaders and Blender",
@@ -216,7 +216,7 @@ const FREELANCERS_DB = [
     reviews: 47,
     skills: ["SaaS Consulting", "Growth Hacking", "Product Strategy"],
     aesthetic_style: "Clean SaaS",
-    portfolio_links: { behance: "https://behance.net/sanashah" },
+    portfolio_links: { linkedin: "https://linkedin.com/in/sanashah" },
     vpa: "sanashah@okaxis",
     avatar: "💡",
     gig_title: "I will consult on SaaS product roadmaps and initial growth launch strategies",
@@ -250,7 +250,7 @@ const FREELANCERS_DB = [
     reviews: 16,
     skills: ["Lightroom", "Photoshop", "Commercial Photo", "Editing"],
     aesthetic_style: "Minimalist",
-    portfolio_links: { behance: "https://behance.net/kiranphotos" },
+    portfolio_links: { linkedin: "https://linkedin.com/in/kiranrao" },
     vpa: "kiranrao@okaxis",
     avatar: "📷",
     gig_title: "I will capture premium product photos and execute high-end retouching",
@@ -449,7 +449,7 @@ export default function App() {
     vpa: "himanshu@okaxis",
     skills: ["React", "UI/UX Development", "Full-Stack Development", "Vite"],
     hourlyRate: "2500",
-    portfolio_links: { github: "https://github.com/keyz-loop", behance: "https://behance.net/himanshudesigns", youtube: "https://youtube.com/c/himanshucodes" }
+    portfolio_links: { github: "https://github.com/keyz-loop", linkedin: "https://linkedin.com/in/himanshusingh", youtube: "https://youtube.com/c/himanshucodes" }
   });
 
   // Client Projects List
@@ -502,7 +502,7 @@ export default function App() {
 
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({
-    name: "", email: "", phone: "", vpa: "", github: "", behance: "", youtube: "", skills: "", industry: "", hiringHistory: "", hourlyRate: ""
+    name: "", email: "", phone: "", vpa: "", github: "", linkedin: "", youtube: "", skills: "", industry: "", hiringHistory: "", hourlyRate: ""
   });
 
   const [inspectedSeller, setInspectedSeller] = useState(null);
@@ -574,7 +574,7 @@ export default function App() {
         phone: clientProfile.phone,
         industry: clientProfile.industry || "",
         hiringHistory: clientProfile.hiringHistory || "",
-        vpa: "", github: "", behance: "", youtube: "", skills: "", hourlyRate: ""
+        vpa: "", github: "", linkedin: "", youtube: "", skills: "", hourlyRate: ""
       });
     } else {
       setProfileForm({
@@ -583,7 +583,7 @@ export default function App() {
         phone: freelancerProfile.phone,
         vpa: freelancerProfile.vpa || "",
         github: freelancerProfile.portfolio_links.github || "",
-        behance: freelancerProfile.portfolio_links.behance || "",
+        linkedin: freelancerProfile.portfolio_links.linkedin || "",
         youtube: freelancerProfile.portfolio_links.youtube || "",
         skills: freelancerProfile.skills.join(", "),
         hourlyRate: freelancerProfile.hourlyRate || "",
@@ -615,7 +615,7 @@ export default function App() {
         hourlyRate: profileForm.hourlyRate,
         portfolio_links: {
           github: profileForm.github,
-          behance: profileForm.behance,
+          linkedin: profileForm.linkedin,
           youtube: profileForm.youtube
         },
         skills: profileForm.skills.split(',').map(s => s.trim()).filter(Boolean)
@@ -1103,7 +1103,7 @@ export default function App() {
                   <Award size={24} />
                 </div>
                 <h3>Vetted Pro Talent</h3>
-                <p>Collaborate with the top 1% verified digital creators and developers, backed by direct links to their GitHub, Behance, or YouTube portfolios.</p>
+                <p>Collaborate with the top 1% verified digital creators and developers, backed by direct links to their GitHub, LinkedIn, or YouTube portfolios.</p>
               </div>
 
               <div className="feature-col" onClick={() => handleCategoryClick("Programming & Tech")}>
@@ -1407,7 +1407,7 @@ export default function App() {
                               <div className="submission-input-group">
                                 <input 
                                   type="text" 
-                                  placeholder="GitHub Repository or Blender/Behance link" 
+                                  placeholder="GitHub Repository, LinkedIn, or Blender link" 
                                   className="submission-input" 
                                   value={deliverableUrls[gig.id] || ""}
                                   onChange={e => setDeliverableUrls({ ...deliverableUrls, [gig.id]: e.target.value })}
@@ -2121,13 +2121,13 @@ export default function App() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="form-group">
-                      <label className="form-label">Behance Portfolio (Behance, Dribbble)</label>
+                      <label className="form-label">LinkedIn Profile URL</label>
                       <input 
                         type="text" 
                         className="form-input" 
-                        value={profileForm.behance}
-                        placeholder="https://behance.net/..."
-                        onChange={e => setProfileForm({ ...profileForm, behance: e.target.value })}
+                        value={profileForm.linkedin}
+                        placeholder="https://linkedin.com/in/..."
+                        onChange={e => setProfileForm({ ...profileForm, linkedin: e.target.value })}
                       />
                     </div>
                     <div className="form-group">
@@ -2217,9 +2217,9 @@ export default function App() {
                     <Github size={14} /> GitHub Profile
                   </a>
                 )}
-                {inspectedSeller.portfolio_links.behance && (
-                  <a href={inspectedSeller.portfolio_links.behance} target="_blank" rel="noreferrer" className="portfolio-badge">
-                    🎨 Behance Portfolio
+                {inspectedSeller.portfolio_links.linkedin && (
+                  <a href={inspectedSeller.portfolio_links.linkedin} target="_blank" rel="noreferrer" className="portfolio-badge">
+                    💼 LinkedIn Profile
                   </a>
                 )}
                 {inspectedSeller.portfolio_links.youtube && (
