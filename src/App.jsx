@@ -437,9 +437,19 @@ export default function App() {
     name: "Alpha Ventures",
     email: "contact@alphaventures.in",
     phone: "+919988776655",
-    vpa: "alpha@okaxis",
-    portfolio_links: { github: "https://github.com/alphaventures", youtube: "https://youtube.com/alphaventures" },
-    skills: ["Business Development", "Saas Launch"]
+    industry: "SaaS & AI Tech",
+    hiringHistory: "5 projects hired"
+  });
+
+  const [freelancerProfile, setFreelancerProfile] = useState({
+    id: "freelancer-id-888",
+    name: "Himanshu Singh",
+    email: "himanshusinghkr15@gmail.com",
+    phone: "+919988776655",
+    vpa: "himanshu@okaxis",
+    skills: ["React", "UI/UX Development", "Full-Stack Development", "Vite"],
+    hourlyRate: "2500",
+    portfolio_links: { github: "https://github.com/keyz-loop", behance: "https://behance.net/himanshudesigns", youtube: "https://youtube.com/c/himanshucodes" }
   });
 
   // Client Projects List
@@ -492,7 +502,7 @@ export default function App() {
 
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({
-    name: "", email: "", phone: "", vpa: "", github: "", behance: "", youtube: "", skills: ""
+    name: "", email: "", phone: "", vpa: "", github: "", behance: "", youtube: "", skills: "", industry: "", hiringHistory: "", hourlyRate: ""
   });
 
   const [inspectedSeller, setInspectedSeller] = useState(null);
@@ -510,6 +520,8 @@ export default function App() {
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
   const [upiTx, setUpiTx] = useState(null);
   const [deliverable, setDeliverable] = useState(null);
+  const [deliverableUrls, setDeliverableUrls] = useState({});
+  const [deliverableNotes, setDeliverableNotes] = useState({});
   
   // Chat
   const [chatInput, setChatInput] = useState("");
@@ -555,36 +567,123 @@ export default function App() {
   };
 
   const handleOpenProfileEditor = () => {
-    setProfileForm({
-      name: clientProfile.name,
-      email: clientProfile.email,
-      phone: clientProfile.phone,
-      vpa: clientProfile.vpa,
-      github: clientProfile.portfolio_links.github || "",
-      behance: clientProfile.portfolio_links.behance || "",
-      youtube: clientProfile.portfolio_links.youtube || "",
-      skills: clientProfile.skills.join(", ")
-    });
+    if (role === 'CLIENT') {
+      setProfileForm({
+        name: clientProfile.name,
+        email: clientProfile.email,
+        phone: clientProfile.phone,
+        industry: clientProfile.industry || "",
+        hiringHistory: clientProfile.hiringHistory || "",
+        vpa: "", github: "", behance: "", youtube: "", skills: "", hourlyRate: ""
+      });
+    } else {
+      setProfileForm({
+        name: freelancerProfile.name,
+        email: freelancerProfile.email,
+        phone: freelancerProfile.phone,
+        vpa: freelancerProfile.vpa || "",
+        github: freelancerProfile.portfolio_links.github || "",
+        behance: freelancerProfile.portfolio_links.behance || "",
+        youtube: freelancerProfile.portfolio_links.youtube || "",
+        skills: freelancerProfile.skills.join(", "),
+        hourlyRate: freelancerProfile.hourlyRate || "",
+        industry: "", hiringHistory: ""
+      });
+    }
     setProfileModalOpen(true);
   };
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
-    const updatedProfile = {
-      ...clientProfile,
-      name: profileForm.name,
-      email: profileForm.email,
-      phone: profileForm.phone,
-      vpa: profileForm.vpa,
-      portfolio_links: {
-        github: profileForm.github,
-        behance: profileForm.behance,
-        youtube: profileForm.youtube
-      },
-      skills: profileForm.skills.split(',').map(s => s.trim()).filter(Boolean)
-    };
-    setClientProfile(updatedProfile);
+    if (role === 'CLIENT') {
+      const updatedProfile = {
+        ...clientProfile,
+        name: profileForm.name,
+        email: profileForm.email,
+        phone: profileForm.phone,
+        industry: profileForm.industry,
+        hiringHistory: profileForm.hiringHistory
+      };
+      setClientProfile(updatedProfile);
+    } else {
+      const updatedProfile = {
+        ...freelancerProfile,
+        name: profileForm.name,
+        email: profileForm.email,
+        phone: profileForm.phone,
+        vpa: profileForm.vpa,
+        hourlyRate: profileForm.hourlyRate,
+        portfolio_links: {
+          github: profileForm.github,
+          behance: profileForm.behance,
+          youtube: profileForm.youtube
+        },
+        skills: profileForm.skills.split(',').map(s => s.trim()).filter(Boolean)
+      };
+      setFreelancerProfile(updatedProfile);
+    }
     setProfileModalOpen(false);
+  };
+
+  const handleApproveAndReleaseForGig = (gig) => {
+    const matchingTx = transactionsList.find(t => t.gig_id === gig.id);
+    const updatedGig = {
+      ...gig,
+      status: 'COMPLETED'
+    };
+    
+    setGigsList(prev => prev.map(g => g.id === gig.id ? updatedGig : g));
+
+    if (matchingTx) {
+      const updatedTx = {
+        ...matchingTx,
+        status: 'RELEASED',
+        updated_at: new Date().toISOString()
+      };
+      setTransactionsList(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
+      if (upiTx && upiTx.gig_id === gig.id) {
+        setUpiTx(updatedTx);
+      }
+    }
+
+    if (activeGig && activeGig.id === gig.id) {
+      setActiveGig(updatedGig);
+      setStep(4);
+    }
+
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
+  const handleDeliverWorkForGig = (gig, url, notes) => {
+    const delivery = {
+      url: url || "https://github.com/keyz-loop/gravity-pro-escrow",
+      notes: notes || "Completed development and verified mobile responsive layout."
+    };
+    
+    const updatedGig = {
+      ...gig,
+      status: 'DELIVERED'
+    };
+    
+    setGigsList(prev => prev.map(g => g.id === updatedGig.id ? updatedGig : g));
+    
+    if (activeGig && activeGig.id === gig.id) {
+      setDeliverable(delivery);
+      setActiveGig(updatedGig);
+      setStep(3);
+    }
+    
+    const deliveryMsg = {
+      id: "msg-delivery-" + Math.random().toString(36).substring(2, 9),
+      gig_id: gig.id,
+      sender_id: freelancerProfile.id,
+      content: `📦 PROJECT SUBMITTED: ${delivery.notes}. Link: ${delivery.url}`
+    };
+    setChatMessages(prev => [...prev, deliveryMsg]);
   };
 
   const handleCreateGig = (e) => {
@@ -824,6 +923,13 @@ export default function App() {
         </button>
 
         <div className="header-controls">
+          {/* Role Switcher Toggle */}
+          <div className="role-switcher" onClick={() => setRole(role === 'CLIENT' ? 'FREELANCER' : 'CLIENT')} title="Toggle client/freelancer terminal mode">
+            <div className={`role-switcher-slider ${role === 'CLIENT' ? 'client' : 'freelancer'}`}></div>
+            <span className={`role-switcher-text ${role === 'CLIENT' ? 'active' : ''}`}>Client Mode (Post Problems)</span>
+            <span className={`role-switcher-text ${role === 'FREELANCER' ? 'active' : ''}`}>Freelancer Mode (Solve Problems)</span>
+          </div>
+
           {/* Dashboard Navigator */}
           <div className="header-nav-group">
             <button 
@@ -868,6 +974,15 @@ export default function App() {
       {/* Mobile Drawer menu sheet */}
       {mobileMenuOpen && (
         <div className="mobile-menu-sheet">
+          {/* Mobile Role Switcher */}
+          <div style={{ padding: '0.5rem 0' }}>
+            <div className="role-switcher" style={{ width: '100%' }} onClick={() => { setRole(role === 'CLIENT' ? 'FREELANCER' : 'CLIENT'); setMobileMenuOpen(false); }}>
+              <div className={`role-switcher-slider ${role === 'CLIENT' ? 'client' : 'freelancer'}`} style={{ width: 'calc(50% - 2px)' }}></div>
+              <span className={`role-switcher-text ${role === 'CLIENT' ? 'active' : ''}`}>Client Mode (Post Problems)</span>
+              <span className={`role-switcher-text ${role === 'FREELANCER' ? 'active' : ''}`}>Freelancer Mode (Solve Problems)</span>
+            </div>
+          </div>
+
           <button 
             className={`mobile-menu-btn ${page !== 'DASHBOARD' ? 'active' : ''}`}
             onClick={() => {
@@ -1064,49 +1179,345 @@ export default function App() {
           </div>
         )}
 
-        {/* 2. CLIENT PROJECTS DASHBOARD VIEW */}
+        {/* 2. DUAL DASHBOARD VIEW */}
         {page === 'DASHBOARD' && (
-          <div className="glass-card">
-            <h2 style={{ marginBottom: '1.25rem', fontSize: '1.4rem', fontWeight: '800', color: '#ffffff' }}>
-              Gravity Pro Projects Ledger
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Manage all gig submissions, escrow status, and UPI payout verification logs from a single client terminal.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {gigsList.map(gig => {
-                const freelancer = FREELANCERS_DB.find(f => f.id === gig.freelancer_id);
-                const tx = transactionsList.find(t => t.gig_id === gig.id);
-                
-                return (
-                  <div key={gig.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', border: '1px solid var(--glass-border)', borderRadius: '8px', background: 'var(--bg-secondary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
-                        <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff' }}>{gig.title}</span>
-                        <span className={`status-pill ${gig.status.toLowerCase()}`}>{gig.status}</span>
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        Budget: <strong>₹{gig.budget}</strong> | Pro Freelancer: <strong>{freelancer ? freelancer.name : 'Unassigned'}</strong>
-                      </div>
-                      {tx && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                          Escrow status: <span style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)', fontWeight: '600' }}>{tx.status}</span> {tx.gateway_reference_id && `(Ref: ${tx.gateway_reference_id})`}
-                        </div>
-                      )}
-                    </div>
-
-                    <button 
-                      onClick={() => handleSelectActiveProject(gig)}
-                      className="btn btn-secondary"
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
-                    >
-                      Enter Workspace
-                    </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {role === 'CLIENT' ? (
+              /* CLIENT MODE DASHBOARD */
+              <div className="glass-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.25rem' }}>
+                      Client Portal: Project Control Room
+                    </h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      Manage your posted problems, escrow locks, and release instant UPI payouts to solvers.
+                    </p>
                   </div>
-                );
-              })}
-            </div>
+                  
+                  {/* Post a New Project Card Button */}
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => { setPage('HOME'); setTimeout(() => { document.getElementById('search-section')?.scrollIntoView({ behavior: 'smooth' }); }, 150); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: 'var(--shadow-glow)' }}
+                  >
+                    <Sparkles size={16} /> Post a New Project/Problem
+                  </button>
+                </div>
+
+                {/* Client Stats Grid */}
+                <div className="dashboard-stats-grid">
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper client">
+                      <Briefcase size={22} />
+                    </div>
+                    <div className="stat-info">
+                      <span className="stat-label">My Posted Problems</span>
+                      <span className="stat-val">{gigsList.filter(g => g.client_id === clientProfile.id).length}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper client" style={{ color: 'var(--primary)', background: 'rgba(29, 191, 115, 0.1)' }}>
+                      <Coins size={22} />
+                    </div>
+                    <div className="stat-info">
+                      <span className="stat-label">Total Escrow Funded</span>
+                      <span className="stat-val">
+                        ₹{gigsList.filter(g => g.client_id === clientProfile.id).reduce((sum, g) => {
+                          const tx = transactionsList.find(t => t.gig_id === g.id);
+                          return sum + (tx && tx.status !== 'PENDING' ? g.budget : 0);
+                        }, 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper client" style={{ color: 'var(--accent-cyan)', background: 'rgba(14, 165, 233, 0.1)' }}>
+                      <User size={22} />
+                    </div>
+                    <div className="stat-info">
+                      <span className="stat-label">Freelancers Hired</span>
+                      <span className="stat-val">
+                        {gigsList.filter(g => g.client_id === clientProfile.id && g.freelancer_id !== null).length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Client Projects Ledger */}
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
+                  Hiring Ledger & Active Escrows
+                </h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {gigsList.filter(g => g.client_id === clientProfile.id).length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
+                      <Briefcase size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
+                      <p>You haven't posted any problems yet. Click "Post a New Project/Problem" to begin.</p>
+                    </div>
+                  ) : (
+                    gigsList.filter(g => g.client_id === clientProfile.id).map(gig => {
+                      const freelancer = FREELANCERS_DB.find(f => f.id === gig.freelancer_id);
+                      const tx = transactionsList.find(t => t.gig_id === gig.id);
+                      
+                      return (
+                        <div key={gig.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', border: '1px solid var(--glass-border)', borderRadius: '12px', background: 'var(--bg-secondary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff' }}>{gig.title}</span>
+                                <span className={`status-pill ${gig.status.toLowerCase()}`}>{gig.status}</span>
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                Budget: <strong>₹{gig.budget.toLocaleString('en-IN')}</strong> | Pro Freelancer: <strong>{freelancer ? freelancer.name : (gig.freelancer_id ? 'Specialist Selected' : 'Searching / Unassigned')}</strong>
+                              </div>
+                              {tx && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <Lock size={10} style={{ color: 'var(--accent-amber)' }} /> Escrow status: <span style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)', fontWeight: '600' }}>{tx.status}</span> {tx.gateway_reference_id && `(Ref: ${tx.gateway_reference_id})`}
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {gig.status === 'DELIVERED' && (
+                                <button 
+                                  onClick={() => handleApproveAndReleaseForGig(gig)}
+                                  className="btn btn-primary"
+                                  style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: 'var(--shadow-glow)' }}
+                                >
+                                  <CheckCircle2 size={12} /> Approve & Release UPI Payout
+                                </button>
+                              )}
+
+                              <button 
+                                onClick={() => handleSelectActiveProject(gig)}
+                                className="btn btn-secondary"
+                                style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                              >
+                                <ExternalLink size={12} /> Enter Workspace
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* FREELANCER MODE DASHBOARD */
+              <div className="glass-card">
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.25rem' }}>
+                    Freelancer Mode: Solution Terminal
+                  </h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    Browse active enterprise problems, submit completed deliverables, and track your instant UPI payouts.
+                  </p>
+                </div>
+
+                {/* Freelancer Stats Grid */}
+                <div className="dashboard-stats-grid">
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper freelancer">
+                      <Briefcase size={22} />
+                    </div>
+                    <div className="stat-info">
+                      <span className="stat-label">My Active Jobs</span>
+                      <span className="stat-val">
+                        {gigsList.filter(g => g.freelancer_id === freelancerProfile.id && (g.status === 'IN_PROGRESS' || g.status === 'DELIVERED')).length}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper freelancer" style={{ color: 'var(--accent-emerald)', background: 'rgba(16, 185, 129, 0.1)' }}>
+                      <ShieldCheck size={22} />
+                    </div>
+                    <div className="stat-info">
+                      <span className="stat-label">Escrow Locked / Verified</span>
+                      <span className="stat-val">
+                        {gigsList.filter(g => g.freelancer_id === freelancerProfile.id && g.status === 'IN_PROGRESS').length}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="dashboard-stat-card">
+                    <div className="stat-icon-wrapper freelancer" style={{ color: 'var(--primary)', background: 'rgba(29, 191, 115, 0.1)' }}>
+                      <Coins size={22} />
+                    </div>
+                    <div className="stat-info">
+                      <span className="stat-label">Earnings Ledger (UPI Payouts)</span>
+                      <span className="stat-val">
+                        ₹{gigsList.filter(g => g.freelancer_id === freelancerProfile.id && g.status === 'COMPLETED').reduce((sum, g) => sum + g.budget, 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* My Active Jobs & Submission Ledger */}
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '1rem' }}>
+                  My Active Contracts & Work Submission Ledger
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
+                  {gigsList.filter(g => g.freelancer_id === freelancerProfile.id).length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
+                      <Briefcase size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
+                      <p>You don't have any active jobs or contracts yet. Browse the available briefs below to get started!</p>
+                    </div>
+                  ) : (
+                    gigsList.filter(g => g.freelancer_id === freelancerProfile.id).map(gig => {
+                      const tx = transactionsList.find(t => t.gig_id === gig.id);
+                      
+                      return (
+                        <div key={gig.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', border: '1px solid var(--glass-border)', borderRadius: '12px', background: 'var(--bg-secondary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff' }}>{gig.title}</span>
+                                <span className={`status-pill ${gig.status.toLowerCase()}`}>{gig.status}</span>
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                Budget: <strong>₹{gig.budget.toLocaleString('en-IN')}</strong> | Escrow VPA: <strong>escrow@razorpay</strong>
+                              </div>
+                              {tx && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <Lock size={10} style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)' }} /> Escrow Status: <span style={{ color: tx.status === 'RELEASED' ? 'var(--primary)' : 'var(--accent-amber)', fontWeight: '600' }}>{tx.status} (Verified)</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <button 
+                              onClick={() => handleSelectActiveProject(gig)}
+                              className="btn btn-secondary"
+                              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                            >
+                              <ExternalLink size={12} /> Enter Workspace
+                            </button>
+                          </div>
+
+                          {/* Work submission form inline inside ledger row */}
+                          {gig.status === 'IN_PROGRESS' && (
+                            <div className="submission-form-container">
+                              <h4 className="submission-form-title">
+                                <Upload size={12} /> Submit Deliverables for Client Review
+                              </h4>
+                              <div className="submission-input-group">
+                                <input 
+                                  type="text" 
+                                  placeholder="GitHub Repository or Blender/Behance link" 
+                                  className="submission-input" 
+                                  value={deliverableUrls[gig.id] || ""}
+                                  onChange={e => setDeliverableUrls({ ...deliverableUrls, [gig.id]: e.target.value })}
+                                />
+                                <input 
+                                  type="text" 
+                                  placeholder="Describe what you did (e.g., Completed layout, optimized routers)" 
+                                  className="submission-input" 
+                                  value={deliverableNotes[gig.id] || ""}
+                                  onChange={e => setDeliverableNotes({ ...deliverableNotes, [gig.id]: e.target.value })}
+                                />
+                              </div>
+                              <button 
+                                className="btn btn-primary"
+                                style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                                onClick={() => {
+                                  if (!(deliverableUrls[gig.id] || "").trim()) {
+                                    alert("Please provide a deliverable project URL.");
+                                    return;
+                                  }
+                                  handleDeliverWorkForGig(gig, deliverableUrls[gig.id], deliverableNotes[gig.id]);
+                                }}
+                              >
+                                Submit Work
+                              </button>
+                            </div>
+                          )}
+
+                          {gig.status === 'DELIVERED' && (
+                            <div style={{ background: 'rgba(205, 164, 94, 0.05)', border: '1px dashed rgba(205, 164, 94, 0.2)', padding: '0.75rem 1rem', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold)' }}>
+                              📦 <strong>Deliverables submitted!</strong> Awaiting client's review and instant UPI escrow release.
+                            </div>
+                          )}
+
+                          {gig.status === 'COMPLETED' && (
+                            <div style={{ background: 'rgba(29, 191, 115, 0.05)', border: '1px dashed rgba(29, 191, 115, 0.2)', padding: '0.75rem 1rem', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--primary)' }}>
+                              🎉 <strong>Payout Released!</strong> Payout amount of ₹{gig.budget.toLocaleString('en-IN')} was successfully transferred to your UPI VPA: {freelancerProfile.vpa}.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Browse Active Problems / Gigs Feed */}
+                <h3 className="browse-feed-title">
+                  <Sparkles size={16} color="var(--accent-gold)" /> Browse Active Marketplace Problems & Briefs
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                  Select a problem posted by clients, claim it, and lock their deposited escrow budget to your solution terminal.
+                </p>
+
+                <div className="browse-gigs-grid">
+                  {gigsList.filter(g => g.status === 'OPEN').length === 0 ? (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px' }}>
+                      <p>No open client problems found. Go to Client Mode to post a new problem brief!</p>
+                    </div>
+                  ) : (
+                    gigsList.filter(g => g.status === 'OPEN').map(gig => (
+                      <div key={gig.id} className="browse-gig-card">
+                        <div>
+                          <div className="browse-gig-header">
+                            <h4 className="browse-gig-title">{gig.title}</h4>
+                            <span className="browse-gig-budget">₹{gig.budget.toLocaleString('en-IN')}</span>
+                          </div>
+                          <p className="browse-gig-desc">{gig.description}</p>
+                        </div>
+                        
+                        <div className="browse-gig-footer">
+                          <div className="browse-skills-list">
+                            {(gig.required_skills || "Figma, React").split(',').map((skill, index) => (
+                              <span key={index} className="browse-skill-tag">{skill.trim()}</span>
+                            ))}
+                          </div>
+                          
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ padding: '0.45rem 0.9rem', fontSize: '0.75rem', borderColor: 'var(--accent-gold)', color: 'var(--accent-gold)' }}
+                            onClick={() => {
+                              const updatedGig = {
+                                ...gig,
+                                freelancer_id: freelancerProfile.id,
+                                status: 'IN_PROGRESS'
+                              };
+                              const newTx = {
+                                id: "tx_" + Math.random().toString(36).substring(2, 11),
+                                gig_id: gig.id,
+                                amount: gig.budget,
+                                gateway_reference_id: "pay_ref_" + Math.random().toString(36).substring(2, 9),
+                                status: 'ESCROW_LOCKED',
+                                client_vpa: clientProfile.vpa,
+                                freelancer_vpa: freelancerProfile.vpa,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                              };
+                              setGigsList(prev => prev.map(g => g.id === gig.id ? updatedGig : g));
+                              setTransactionsList(prev => [newTx, ...prev]);
+                              alert(`Success! You accepted the gig: "${gig.title}". The escrow budget of ₹${gig.budget.toLocaleString('en-IN')} has been LOCKED. Switch to active jobs above to submit completed work.`);
+                            }}
+                          >
+                            Apply & Solve Gig
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1631,62 +2042,107 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Indian UPI VPA ID (for Escrow routing)</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="e.g. business@okaxis"
-                  className="form-input" 
-                  value={profileForm.vpa}
-                  onChange={e => setProfileForm({ ...profileForm, vpa: e.target.value })}
-                />
-              </div>
+              {role === 'CLIENT' ? (
+                /* CLIENT FORM FIELDS */
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Enterprise Industry</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. SaaS, AI Tech, FinTech"
+                      value={profileForm.industry || ""}
+                      onChange={e => setProfileForm({ ...profileForm, industry: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Past Hiring History</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. 5 projects hired, 10 active freelancers"
+                      value={profileForm.hiringHistory || ""}
+                      onChange={e => setProfileForm({ ...profileForm, hiringHistory: e.target.value })}
+                    />
+                  </div>
+                </>
+              ) : (
+                /* FREELANCER FORM FIELDS */
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Tech Stack / Skills (comma separated)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. React, UI/UX, Node.js"
+                      value={profileForm.skills}
+                      onChange={e => setProfileForm({ ...profileForm, skills: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Hourly Rate (₹/hr)</label>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        placeholder="e.g. 2500"
+                        value={profileForm.hourlyRate || ""}
+                        onChange={e => setProfileForm({ ...profileForm, hourlyRate: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Indian UPI VPA ID (for Escrow routing)</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. freelancer@okaxis"
+                        className="form-input" 
+                        value={profileForm.vpa}
+                        onChange={e => setProfileForm({ ...profileForm, vpa: e.target.value })}
+                      />
+                    </div>
+                  </div>
 
-              <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#ffffff', margin: '1rem 0 0.5rem 0', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
-                Portfolio Connections
-              </h4>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#ffffff', margin: '1.5rem 0 0.5rem 0', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+                    Portfolio Connections
+                  </h4>
 
-              <div className="form-group">
-                <label className="form-label">GitHub URL</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={profileForm.github}
-                  onChange={e => setProfileForm({ ...profileForm, github: e.target.value })}
-                />
-              </div>
+                  <div className="form-group">
+                    <label className="form-label">GitHub Portfolio URL</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={profileForm.github}
+                      placeholder="https://github.com/..."
+                      onChange={e => setProfileForm({ ...profileForm, github: e.target.value })}
+                    />
+                  </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Behance URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={profileForm.behance}
-                    onChange={e => setProfileForm({ ...profileForm, behance: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">YouTube URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={profileForm.youtube}
-                    onChange={e => setProfileForm({ ...profileForm, youtube: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Skills / Tags (comma separated)</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={profileForm.skills}
-                  onChange={e => setProfileForm({ ...profileForm, skills: e.target.value })}
-                />
-              </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Behance Portfolio (Behance, Dribbble)</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={profileForm.behance}
+                        placeholder="https://behance.net/..."
+                        onChange={e => setProfileForm({ ...profileForm, behance: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">YouTube Showcase Link</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={profileForm.youtube}
+                        placeholder="https://youtube.com/..."
+                        onChange={e => setProfileForm({ ...profileForm, youtube: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setProfileModalOpen(false)}>
